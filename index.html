@@ -2,98 +2,78 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M.I.R.A. v10.0</title>
     <style>
-        :root { --mira-green: #00ff41; --mira-bg: #000b00; }
-        html, body { height: 100%; margin: 0; background: var(--mira-bg); color: var(--mira-green); font-family: 'Courier New', monospace; overflow: hidden; }
-        #terminal { display: flex; flex-direction: column; height: 100dvh; padding: 15px; box-sizing: border-box; border: 2px solid var(--mira-green); }
-        #hud { display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 10px; }
-        #mira-orb { width: 50px; height: 50px; border-radius: 50%; background: var(--mira-green); box-shadow: 0 0 15px var(--mira-green); margin: 0 auto 10px; }
-        #log { flex-grow: 1; overflow-y: auto; font-size: 0.85rem; border-top: 1px solid #003300; padding: 10px 0; }
-        .input-area { display: flex; border-top: 2px solid var(--mira-green); padding: 10px 0; background: var(--mira-bg); }
-        input { background: transparent; border: none; color: var(--mira-green); outline: none; flex-grow: 1; font-size: 1rem; }
-        button { background: #003300; color: var(--mira-green); border: 1px solid var(--mira-green); font-size: 0.6rem; padding: 5px; cursor: pointer; }
-        #overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        body { background: #000; color: #00ff41; font-family: monospace; padding: 20px; }
+        #log { height: 70vh; overflow-y: auto; border-bottom: 1px solid #003300; margin-bottom: 10px; }
+        .input-area { display: flex; }
+        input { background: transparent; border: none; color: #00ff41; outline: none; flex: 1; font-size: 1.2rem; }
+        button { background: #003300; color: #00ff41; border: 1px solid #00ff41; padding: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="overlay" onclick="iniciarMIRA()">[ CLIQUE PARA CONECTAR ]</div>
+<div id="hud">OP: PATRICK | <button onclick="reset()">RESETAR CHAVE</button></div>
+<div id="log"><div>[SISTEMA] Aguardando comando...</div></div>
 
-<div id="terminal">
-    <div id="hud"><span>OP: PATRICK</span><button onclick="resetarChave()">RESETAR CHAVE</button></div>
-    <div id="mira-orb"></div>
-    <div id="log"></div>
-    <div class="input-area">
-        <span style="margin-right:8px;">CMD></span>
-        <input type="text" id="inputComando" placeholder="Fale aqui..." autocomplete="off">
-    </div>
+<div class="input-area">
+    <span>CMD></span>
+    <input type="text" id="cmd" placeholder="Digite aqui..." onkeypress="if(event.key==='Enter') enviar()">
 </div>
 
 <script>
-    function addLog(o, t) {
-        const log = document.getElementById('log');
-        log.innerHTML += `<div><b>[${o}]</b> ${t}</div>`;
+    const log = document.getElementById('log');
+    const input = document.getElementById('cmd');
+
+    function addLog(txt) {
+        log.innerHTML += `<div>${txt}</div>`;
         log.scrollTop = log.scrollHeight;
     }
 
-    function resetarChave() {
-        localStorage.removeItem('gemini_key');
-        location.reload();
-    }
+    function reset() { localStorage.removeItem('mira_key'); location.reload(); }
 
-    async function pensarComGemini(pergunta) {
-        let apiKey = localStorage.getItem('gemini_key');
-        if (!apiKey) {
-            apiKey = prompt("M.I.R.A. - Cole sua API Key:");
-            if (apiKey) { localStorage.setItem('gemini_key', apiKey.trim()); } else return;
+    async function enviar() {
+        const pergunta = input.value;
+        if(!pergunta) return;
+        
+        let key = localStorage.getItem('mira_key');
+        if(!key) {
+            key = prompt("Cole sua API Key do Google:");
+            if(key) localStorage.setItem('mira_key', key.trim());
+            else return;
         }
 
-        addLog("M.I.R.A.", "Consultando matriz...");
-        
-        // URL CORRIGIDA PARA O MODELO MAIS ESTÁVEL
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        addLog(`<b>PATRICK:</b> ${pergunta}`);
+        input.value = "";
+        addLog("<i>M.I.R.A.: Consultando matriz...</i>");
+
+        // URL ATUALIZADA PARA CHAVES DE 2026
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: pergunta }] }] })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({contents: [{parts: [{text: pergunta}]}]})
             });
 
             const data = await response.json();
-
-            if (data.error) {
-                addLog("ERRO", "Google diz: " + data.error.message);
-                if(data.error.message.includes("key")) localStorage.removeItem('gemini_key');
+            
+            if(data.error) {
+                addLog(`[ERRO] ${data.error.message}`);
+                if(data.error.message.includes("key")) localStorage.removeItem('mira_key');
             } else {
-                const respostaIA = data.candidates[0].content.parts[0].text;
-                addLog("M.I.R.A.", respostaIA);
-                const m = new SpeechSynthesisUtterance(respostaIA);
-                m.lang = 'pt-BR';
-                window.speechSynthesis.speak(m);
+                const resposta = data.candidates[0].content.parts[0].text;
+                addLog(`<b>M.I.R.A.:</b> ${resposta}`);
+                const voz = new SpeechSynthesisUtterance(resposta);
+                voz.lang = 'pt-BR';
+                window.speechSynthesis.speak(voz);
             }
-        } catch (erro) {
-            addLog("ERRO", "Falha de conexão.");
+        } catch (e) {
+            addLog("[ERRO] Falha de conexão.");
         }
     }
-
-    async function processar(val) {
-        if(!val.trim()) return;
-        addLog("PATRICK", val);
-        document.getElementById('inputComando').value = "";
-        await pensarComGemini(val);
-    }
-
-    function iniciarMIRA() {
-        document.getElementById('overlay').style.display = 'none';
-        addLog("SISTEMA", "M.I.R.A. v10.0 ONLINE.");
-    }
-
-    document.getElementById('inputComando').addEventListener('keypress', (e) => {
-        if(e.key === 'Enter') processar(e.target.value);
-    });
 </script>
 </body>
 </html>
