@@ -12,7 +12,7 @@
         #avatar-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px; }
         #mira-orb { width: 50px; height: 50px; border-radius: 50%; background: var(--mira-green); box-shadow: 0 0 15px var(--mira-green); margin-bottom: 10px; }
         #log { flex-grow: 1; overflow-y: auto; font-size: 0.85rem; border-top: 1px solid #003300; padding: 10px 0; }
-        .input-area { display: flex; border-top: 2px solid var(--mira-green); padding: 10px 0; }
+        .input-area { display: flex; border-top: 2px solid var(--mira-green); padding: 10px 0; background: var(--mira-bg); }
         input { background: transparent; border: none; color: var(--mira-green); outline: none; flex-grow: 1; font-size: 1rem; }
         button { background: #003300; color: var(--mira-green); border: 1px solid var(--mira-green); font-size: 0.6rem; padding: 5px; cursor: pointer; }
         #overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; }
@@ -30,7 +30,7 @@
 
     <div id="avatar-container">
         <div id="mira-orb"></div>
-        <div id="status-neural">NEURAL: AGUARDANDO</div>
+        <div id="status-neural">NEURAL: ONLINE</div>
     </div>
 
     <div id="log"></div>
@@ -50,7 +50,7 @@
 
     function resetarChave() {
         localStorage.removeItem('gemini_key');
-        alert("Chave removida. Recarregue a página para digitar a nova.");
+        alert("Chave removida. O sistema pedirá uma nova ao digitar.");
         location.reload();
     }
 
@@ -58,17 +58,17 @@
         let apiKey = localStorage.getItem('gemini_key');
         
         if (!apiKey) {
-            apiKey = prompt("M.I.R.A. - Digite ou cole sua API Key:");
+            apiKey = prompt("M.I.R.A. - Cole sua API Key aqui:");
             if (apiKey) {
                 apiKey = apiKey.trim();
                 localStorage.setItem('gemini_key', apiKey);
             } else return;
         }
 
-        addLog("M.I.R.A.", "Consultando matriz...");
+        addLog("M.I.R.A.", "Consultando matriz neural...");
         
-        // URL simplificada (v1) para evitar erros de versão
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
+        // URL E MODELO CORRIGIDOS PARA V1BETA E 1.5-FLASH
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         try {
             const response = await fetch(url, {
@@ -82,21 +82,22 @@
             const data = await response.json();
 
             if (data.error) {
-                addLog("ERRO", data.error.message);
-                if(data.error.message.includes("API key")) {
+                addLog("ERRO", "Resposta do Google: " + data.error.message);
+                if (data.error.message.includes("API key")) {
                     localStorage.removeItem('gemini_key');
-                    addLog("SISTEMA", "Chave inválida removida. Tente novamente.");
+                    addLog("SISTEMA", "Chave inválida. Use o botão RESETAR.");
                 }
-            } else {
+            } else if (data.candidates && data.candidates[0].content) {
                 const respostaIA = data.candidates[0].content.parts[0].text;
                 addLog("M.I.R.A.", respostaIA);
-                // Voz opcional
                 const m = new SpeechSynthesisUtterance(respostaIA);
                 m.lang = 'pt-BR';
                 window.speechSynthesis.speak(m);
+            } else {
+                addLog("ERRO", "Modelo não respondeu. Tente novamente.");
             }
         } catch (erro) {
-            addLog("ERRO", "Falha de rede ou chave expirada.");
+            addLog("ERRO", "Falha de conexão. Verifique sua internet.");
         }
     }
 
