@@ -6,29 +6,69 @@
     <title>M.I.R.A. v10.0 - Neural Core</title>
     <style>
         :root { --mira-green: #00ff41; --mira-bg: #000b00; }
-        body { background: var(--mira-bg); color: var(--mira-green); font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
-        #terminal { width: 100vw; height: 100vh; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; border: 2px solid var(--mira-green); }
+        
+        /* Ajuste para garantir que nada suma no navegador do celular */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            background: var(--mira-bg); 
+            color: var(--mira-green); 
+            font-family: 'Courier New', monospace; 
+            overflow: hidden;
+        }
+
+        #terminal { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100dvh; /* Usa a altura dinâmica do navegador */
+            padding: 15px; 
+            box-sizing: border-box; 
+            border: 2px solid var(--mira-green); 
+        }
+
         #hud { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 5px; opacity: 0.8; }
-        #vision-container { display: none; width: 100%; height: 140px; border: 1px solid var(--mira-green); margin: 10px 0; overflow: hidden; position: relative; }
+        
+        #vision-container { display: none; width: 100%; height: 120px; border: 1px solid var(--mira-green); margin: 10px 0; overflow: hidden; position: relative; }
         #video { width: 100%; height: 100%; object-fit: cover; filter: sepia(1) hue-rotate(90deg) brightness(0.8); }
-        #avatar-container { display: flex; justify-content: center; align-items: center; height: 80px; }
-        #mira-orb { width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle, var(--mira-green) 0%, transparent 70%); box-shadow: 0 0 20px var(--mira-green); transition: all 0.5s; }
+        
+        #avatar-container { display: flex; justify-content: center; align-items: center; min-height: 80px; }
+        #mira-orb { width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, var(--mira-green) 0%, transparent 70%); box-shadow: 0 0 20px var(--mira-green); transition: all 0.5s; }
+        
         #log { flex-grow: 1; overflow-y: auto; font-size: 0.85rem; padding: 10px 0; border-top: 1px solid #003300; }
-        .input-area { display: flex; border-top: 1px solid #003300; padding-top: 10px; }
-        input { background: transparent; border: none; color: var(--mira-green); outline: none; flex-grow: 1; font-size: 1rem; }
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        
+        /* Área de input reforçada para mobile */
+        .input-area { 
+            display: flex; 
+            align-items: center;
+            border-top: 2px solid var(--mira-green); 
+            padding: 15px 0; 
+            background: var(--mira-bg);
+            margin-bottom: 5px;
+        }
+        
+        input { 
+            background: transparent; 
+            border: none; 
+            color: var(--mira-green); 
+            outline: none; 
+            flex-grow: 1; 
+            font-size: 1.1rem; /* Maior para facilitar o toque */
+        }
+
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: flex; align-items: center; justify-content: center; cursor: pointer; text-align: center; padding: 20px; box-sizing: border-box;}
         .forma-circulo { clip-path: circle(50%); }
         .forma-hex { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
     </style>
 </head>
 <body>
 
-<div id="overlay" onclick="iniciarMIRA()">[ CONECTAR À MATRIZ M.I.R.A. v10.0 ]</div>
+<div id="overlay" onclick="iniciarMIRA()">[ CLIQUE PARA CONECTAR À MATRIZ M.I.R.A. v10.0 ]</div>
 
 <div id="terminal">
     <div id="hud">
         <span>OP: PATRICK</span>
-        <span id="sync-status">NEURAL: READY</span>
+        <span id="sync-status">NEURAL: ONLINE</span>
     </div>
 
     <div id="vision-container">
@@ -42,13 +82,12 @@
     <div id="log"></div>
 
     <div class="input-area">
-        <span style="opacity:0.5; margin-right:5px;">CMD></span>
-        <input type="text" id="inputComando" placeholder="Fale com a M.I.R.A..." autocomplete="off">
+        <span style="color:var(--mira-green); font-weight:bold; margin-right:8px;">CMD></span>
+        <input type="text" id="inputComando" placeholder="Escreva aqui..." autocomplete="off">
     </div>
 </div>
 
 <script>
-    // --- CONFIGURAÇÕES E MEMÓRIA ---
     let userDados = JSON.parse(localStorage.getItem('mira_data')) || { nome: "Patrick", notas: [] };
     
     function addLog(o, t) {
@@ -61,17 +100,20 @@
         window.speechSynthesis.cancel();
         const m = new SpeechSynthesisUtterance(t);
         m.lang = 'pt-BR';
-        m.pitch = 1.1;
         window.speechSynthesis.speak(m);
     }
 
     function mudarEstado(est) {
         const orb = document.getElementById('mira-orb');
-        orb.style.background = est === 'analise' ? "white" : "var(--mira-green)";
-        orb.className = est === 'analise' ? "forma-hex" : "forma-circulo";
+        if(est === 'analise') {
+            orb.style.background = "white";
+            orb.className = "forma-hex";
+        } else {
+            orb.style.background = "var(--mira-green)";
+            orb.className = "forma-circulo";
+        }
     }
 
-    // --- MÓDULO VISÃO ---
     async function ativarVisao() {
         try {
             const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -81,20 +123,20 @@
         } catch (e) { addLog("ERRO", "Câmera inacessível."); }
     }
 
-    // --- MÓDULO CÉREBRO NEURAL (GEMINI) ---
     async function pensarComGemini(pergunta) {
         let apiKey = localStorage.getItem('gemini_key');
         
         if (!apiKey) {
-            apiKey = prompt("M.I.R.A. detectou ausência de Cérebro Neural. Cole sua API Key aqui:");
+            apiKey = prompt("M.I.R.A. - Insira sua API Key (aquela que começa com AIza):");
             if (apiKey) {
+                apiKey = apiKey.trim();
                 localStorage.setItem('gemini_key', apiKey);
-                addLog("SISTEMA", "Chave salva com sucesso.");
+                addLog("SISTEMA", "Chave neural sincronizada.");
             } else return;
         }
 
         mudarEstado("analise");
-        addLog("M.I.R.A.", "Processando pensamento...");
+        addLog("M.I.R.A.", "Consultando matriz...");
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
@@ -106,50 +148,45 @@
             });
 
             const data = await response.json();
-            const respostaIA = data.candidates[0].content.parts[0].text;
+            if (data.error) throw new Error(data.error.message);
 
+            const respostaIA = data.candidates[0].content.parts[0].text;
             mudarEstado("estavel");
             addLog("M.I.R.A.", respostaIA);
             falar(respostaIA);
         } catch (erro) {
-            addLog("ERRO", "Falha na matriz neural. Verifique sua conexão ou chave.");
+            addLog("ERRO", "Falha: " + erro.message);
             mudarEstado("estavel");
+            if(erro.message.includes("API key")) localStorage.removeItem('gemini_key');
         }
     }
 
-    // --- PROCESSADOR PRINCIPAL ---
     async function processar(val) {
+        if(!val.trim()) return;
         const msg = val.toLowerCase();
         addLog("PATRICK", val);
         document.getElementById('inputComando').value = "";
 
-        // Comandos Manuais
         if (msg.includes("câmera") || msg.includes("veja")) { ativarVisao(); return; }
         
         if (msg.includes("tempo em")) {
             const cidade = msg.split(" em ")[1];
-            const res = await fetch(`https://api.hgbrasil.com/weather?format=json-cors&key=707b99d0&city_name=${cidade}`);
-            const d = await res.json();
-            const r = `O clima em ${d.results.city} é ${d.results.description} com ${d.results.temp}°C.`;
-            addLog("M.I.R.A.", r); falar(r); return;
+            try {
+                const res = await fetch(`https://api.hgbrasil.com/weather?format=json-cors&key=707b99d0&city_name=${cidade}`);
+                const d = await res.json();
+                const r = `Clima em ${d.results.city}: ${d.results.description}, ${d.results.temp}°C.`;
+                addLog("M.I.R.A.", r); falar(r);
+            } catch(e) { addLog("ERRO", "Falha ao consultar clima."); }
+            return;
         }
 
-        if (msg.startsWith("anote")) {
-            const n = val.replace("anote", "").trim();
-            userDados.notas.push(n);
-            localStorage.setItem('mira_data', JSON.stringify(userDados));
-            addLog("M.I.R.A.", "Gravado na memória permanente.");
-            falar("Anotado."); return;
-        }
-
-        // Se não for comando, usa o Cérebro Neural!
         await pensarComGemini(val);
     }
 
     function iniciarMIRA() {
         document.getElementById('overlay').style.display = 'none';
         addLog("SISTEMA", "M.I.R.A. v10.0 ONLINE.");
-        falar("Sistemas prontos, Patrick.");
+        falar("Sistema iniciado. Como posso ajudar, Patrick?");
     }
 
     document.getElementById('inputComando').addEventListener('keypress', (e) => {
