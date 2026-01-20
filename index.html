@@ -7,15 +7,14 @@
     <style>
         :root { --mira-green: #00ff41; --mira-bg: #000b00; }
         html, body { height: 100%; margin: 0; background: var(--mira-bg); color: var(--mira-green); font-family: 'Courier New', monospace; overflow: hidden; }
-        #terminal { display: flex; flex-direction: column; height: 100dvh; padding: 15px; box-sizing: border-box; }
+        #terminal { display: flex; flex-direction: column; height: 100dvh; padding: 15px; box-sizing: border-box; border: 2px solid var(--mira-green); }
         #hud { display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 10px; }
-        #avatar-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px; }
-        #mira-orb { width: 50px; height: 50px; border-radius: 50%; background: var(--mira-green); box-shadow: 0 0 15px var(--mira-green); margin-bottom: 10px; }
+        #mira-orb { width: 50px; height: 50px; border-radius: 50%; background: var(--mira-green); box-shadow: 0 0 15px var(--mira-green); margin: 0 auto 10px; }
         #log { flex-grow: 1; overflow-y: auto; font-size: 0.85rem; border-top: 1px solid #003300; padding: 10px 0; }
         .input-area { display: flex; border-top: 2px solid var(--mira-green); padding: 10px 0; background: var(--mira-bg); }
         input { background: transparent; border: none; color: var(--mira-green); outline: none; flex-grow: 1; font-size: 1rem; }
         button { background: #003300; color: var(--mira-green); border: 1px solid var(--mira-green); font-size: 0.6rem; padding: 5px; cursor: pointer; }
-        #overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; }
+        #overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -23,21 +22,12 @@
 <div id="overlay" onclick="iniciarMIRA()">[ CLIQUE PARA CONECTAR ]</div>
 
 <div id="terminal">
-    <div id="hud">
-        <span>OP: PATRICK</span>
-        <button onclick="resetarChave()">RESETAR CHAVE</button>
-    </div>
-
-    <div id="avatar-container">
-        <div id="mira-orb"></div>
-        <div id="status-neural">NEURAL: ONLINE</div>
-    </div>
-
+    <div id="hud"><span>OP: PATRICK</span><button onclick="resetarChave()">RESETAR CHAVE</button></div>
+    <div id="mira-orb"></div>
     <div id="log"></div>
-
     <div class="input-area">
         <span style="margin-right:8px;">CMD></span>
-        <input type="text" id="inputComando" placeholder="Digite aqui..." autocomplete="off">
+        <input type="text" id="inputComando" placeholder="Fale aqui..." autocomplete="off">
     </div>
 </div>
 
@@ -50,54 +40,42 @@
 
     function resetarChave() {
         localStorage.removeItem('gemini_key');
-        alert("Chave removida. O sistema pedirá uma nova ao digitar.");
         location.reload();
     }
 
     async function pensarComGemini(pergunta) {
         let apiKey = localStorage.getItem('gemini_key');
-        
         if (!apiKey) {
-            apiKey = prompt("M.I.R.A. - Cole sua API Key aqui:");
-            if (apiKey) {
-                apiKey = apiKey.trim();
-                localStorage.setItem('gemini_key', apiKey);
-            } else return;
+            apiKey = prompt("M.I.R.A. - Cole sua API Key:");
+            if (apiKey) { localStorage.setItem('gemini_key', apiKey.trim()); } else return;
         }
 
-        addLog("M.I.R.A.", "Consultando matriz neural...");
+        addLog("M.I.R.A.", "Consultando matriz...");
         
-        // URL E MODELO CORRIGIDOS PARA V1BETA E 1.5-FLASH
+        // URL CORRIGIDA PARA O MODELO MAIS ESTÁVEL
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         try {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: pergunta }] }]
-                })
+                body: JSON.stringify({ contents: [{ parts: [{ text: pergunta }] }] })
             });
 
             const data = await response.json();
 
             if (data.error) {
-                addLog("ERRO", "Resposta do Google: " + data.error.message);
-                if (data.error.message.includes("API key")) {
-                    localStorage.removeItem('gemini_key');
-                    addLog("SISTEMA", "Chave inválida. Use o botão RESETAR.");
-                }
-            } else if (data.candidates && data.candidates[0].content) {
+                addLog("ERRO", "Google diz: " + data.error.message);
+                if(data.error.message.includes("key")) localStorage.removeItem('gemini_key');
+            } else {
                 const respostaIA = data.candidates[0].content.parts[0].text;
                 addLog("M.I.R.A.", respostaIA);
                 const m = new SpeechSynthesisUtterance(respostaIA);
                 m.lang = 'pt-BR';
                 window.speechSynthesis.speak(m);
-            } else {
-                addLog("ERRO", "Modelo não respondeu. Tente novamente.");
             }
         } catch (erro) {
-            addLog("ERRO", "Falha de conexão. Verifique sua internet.");
+            addLog("ERRO", "Falha de conexão.");
         }
     }
 
