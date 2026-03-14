@@ -1,221 +1,437 @@
-<!DOCTYPE html>  <html lang="pt-br">  
-<style>  
-    /* ======= DNA VISUAL PRESERVADO ======= */
-    :root {   
-        --mira-cyan: #00f3ff; --luma-amber: #ffaa00;   
-        --kaia-mint: #98ffeb; --mira-yellow: #fcee0a; 
-        --mira-bg: #050505; --mira-pink: #ff00ff;  
-        --mira-red: #ff3333;  
-    }  
-    body { background: var(--mira-bg); color: var(--mira-cyan); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }  
-    #header { padding: 12px; border-bottom: 3px solid var(--mira-yellow); display: flex; justify-content: space-between; background: rgba(0, 0, 0, 0.95); font-weight: 900; }  
-    #stability-bar { width: 100%; height: 8px; background: var(--mira-cyan); box-shadow: 0 0 10px var(--mira-cyan); transition: 0.3s; margin-top: 5px; }  
-    #log { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }  
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KALLYS AI - V9.0.0 DATA VISION</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    .msg { border: 1px solid var(--mira-cyan); padding: 15px; background: rgba(0, 20, 30, 0.85); border-left: 5px solid var(--mira-cyan); max-width: 85%; font-family: 'Consolas', monospace; position: relative; }  
-    .msg.luma { border-color: var(--luma-amber); border-left-color: var(--luma-amber); background: rgba(30, 20, 0, 0.85); color: #ffe0b3; }  
-    .msg.kaia { border-color: var(--kaia-mint); border-left-color: var(--kaia-mint); background: rgba(0, 30, 25, 0.85); color: #e0fff9; }  
-    .msg.user { align-self: flex-end; border-color: var(--mira-pink); border-right: 5px solid var(--mira-pink); border-left: 0; background: rgba(30, 0, 30, 0.85); }  
-    
-    .sup-tag { position: absolute; top: -10px; right: 10px; font-size: 0.6rem; background: var(--mira-yellow); color: #000; padding: 2px 5px; font-weight: bold; border-radius: 3px; }
+    <style>
+        :root {
+            --bg-color: #0b0d0f; --card-bg: #16191d; --accent-color: #10a37f;
+            --user-bubble: #1c1f24; --text-main: #ececf1; --text-dim: #9ea2a8; --border-color: #2d3139;
+            --star-color: #ffca28; --danger-red: #ff3333; --thought-bg: rgba(16, 163, 127, 0.08);
+            --sync-blue: #007bff; --terminal-green: #00ff41; --decision-gold: #c5a059;
+        }
+        .light-mode {
+            --bg-color: #f4f4f9; --card-bg: #ffffff; --user-bubble: #e8e8e8;
+            --text-main: #1a1a1a; --text-dim: #5c5c5c; --border-color: #d1d1d1;
+        }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; transition: 0.3s; }
+        
+        .app-header { padding: 10px; background: var(--card-bg); border-bottom: 2px solid var(--accent-color); display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .logo-img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent-color); object-fit: cover; filter: drop-shadow(0 0 8px var(--accent-color)); }
+        
+        .led-panel { display: flex; gap: 8px; margin-top: 4px; }
+        .led { width: 7px; height: 7px; border-radius: 50%; background: #222; transition: 0.2s; border: 1px solid rgba(255,255,255,0.05); }
+        .led-active { background: var(--accent-color); box-shadow: 0 0 8px var(--accent-color); }
+        .led-vision { background: var(--sync-blue); box-shadow: 0 0 8px var(--sync-blue); }
+        .led-alert { background: var(--danger-red); box-shadow: 0 0 8px var(--danger-red); }
 
-    .controls { padding: 15px; border-top: 2px solid var(--mira-yellow); background: rgba(10, 10, 10, 0.98); }  
-    .profile-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }  
-    
-    .btn-agent { background: transparent; border: 2px solid var(--mira-cyan); color: var(--mira-cyan); padding: 8px 16px; font-weight: bold; font-size: .75rem; cursor: pointer; clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%); transition: 0.2s; }
-    .btn-agent.active { background: var(--mira-yellow) !important; color: #000 !important; border-color: var(--mira-yellow) !important; }
+        .app-title { font-size: 10px; font-weight: 900; color: var(--accent-color); letter-spacing: 2px; text-transform: uppercase; opacity: 0.8; }
+        .header-tools { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
 
-    .btn-action { background: transparent; border: 1px solid var(--mira-cyan); color: #fff; padding: 6px 10px; font-size: 0.65rem; font-weight: bold; cursor: pointer; position: relative; min-width: 90px; text-transform: uppercase; margin: 2px; }
-    .btn-action::before { content: ''; position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: var(--mira-cyan); }
-    .btn-danger { border-color: var(--mira-red); }
-    .btn-danger::before { background: var(--mira-red); }
-    .btn-luma-sub { border-color: var(--luma-amber); }
-    .btn-luma-sub::before { background: var(--luma-amber); }
-    .btn-kaia-sub { border-color: var(--kaia-mint); }
-    .btn-kaia-sub::before { background: var(--kaia-mint); }
-    
-    .input-row { display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.8); border: 1px solid var(--mira-cyan); padding-right: 10px; }
-    input { flex: 1; background: transparent; border: none; color: #fff; padding: 12px; outline: none; }
-    .tool-btn { background: none; border: none; cursor: pointer; font-size: 1.2rem; filter: grayscale(1); transition: 0.3s; padding: 5px; }
-    .tool-btn:hover { filter: grayscale(0); transform: scale(1.1); }
-    .listening { filter: grayscale(0) drop-shadow(0 0 5px var(--mira-red)) !important; }
-</style>  
+        .perfil-dashboard { display: flex; justify-content: space-around; background: rgba(0, 0, 0, 0.6); padding: 8px; border-bottom: 1px solid var(--border-color); font-size: 9px; font-weight: bold; }
+        .stat-item { flex: 1; text-align: center; color: var(--text-dim); text-transform: uppercase; }
+        .stat-bar-bg { height: 3px; background: #222; margin-top: 4px; border-radius: 2px; overflow: hidden; width: 70%; margin-left: 15%; }
+        .stat-fill { height: 100%; width: 0%; transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .color-tec { background: var(--sync-blue); }
+        .color-est { background: var(--accent-color); }
+        .color-cri { background: var(--star-color); }
 
-<body id="main-frame">  
-    <div id="header">  
-        <div>AXIOM v3.7 // <span id="profileName">SINCRO</span><div id="stability-bar"></div></div>  
-        <div style="text-align:right; font-family:monospace; font-size:0.8rem;">
-            <span id="clock">00:00:00</span><br>
-            <span id="telemetry" style="color:var(--mira-pink)">RPM: 0/30 | TPM: 0/30000</span>
+        #chat { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+        .bubble { max-width: 85%; padding: 12px 16px; border-radius: 10px; font-size: 14px; line-height: 1.6; position: relative; animation: slideUp 0.25s ease-out; word-wrap: break-word; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .user { align-self: flex-end; background: var(--user-bubble); border-right: 3px solid var(--text-dim); color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .assistant { align-self: flex-start; background: rgba(16, 163, 127, 0.05); border-left: 3px solid var(--accent-color); border: 1px solid rgba(16, 163, 127, 0.15); }
+        
+        .chart-container { background: #050505; padding: 12px; border-radius: 8px; margin: 10px 0; border: 1px solid var(--border-color); }
+        .thought-process { font-size: 10.5px; color: var(--accent-color); background: var(--thought-bg); padding: 8px; border-radius: 4px; margin-bottom: 8px; border: 1px dashed rgba(16, 163, 127, 0.3); font-family: 'Cascadia Code', monospace; }
+        
+        .input-area { padding: 12px; background: var(--card-bg); border-top: 1px solid var(--border-color); z-index: 10; }
+        .input-row { display: flex; gap: 8px; align-items: center; }
+        input { flex-grow: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; color: var(--text-main); outline: none; font-size: 14px; transition: border 0.2s; }
+        input:focus { border-color: var(--accent-color); }
+        
+        .telemetry-bar { display: flex; justify-content: space-between; font-family: monospace; font-size: 9px; color: var(--text-dim); margin-bottom: 4px; }
+        .telemetry-val { color: var(--terminal-green); }
+
+        .btn-action { background: #23262b; border: 1px solid var(--border-color); width: 40px; height: 40px; border-radius: 6px; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.1s; -webkit-tap-highlight-color: transparent; }
+        .btn-action:active { transform: scale(0.95); background: var(--border-color); }
+        .btn-mute.active { background: var(--danger-red); border-color: var(--danger-red); }
+        .btn-send { background: var(--accent-color); width: 42px; height: 42px; border-radius: 6px; border: none; color: white; cursor: pointer; font-size: 18px; font-weight: bold; }
+
+        select { width: 100%; background: var(--bg-color); color: var(--accent-color); border: 1px solid var(--border-color); padding: 6px; border-radius: 4px; font-size: 11px; margin-bottom: 8px; outline: none; }
+        .memoria-bar { width: 100%; height: 2px; background: #1a1a1a; margin-bottom: 6px; border-radius: 1px; overflow: hidden; }
+        #status-bar { height: 100%; width: 0%; background: var(--accent-color); transition: 0.4s; }
+        
+        .footer-links { display: flex; justify-content: space-between; margin-top: 12px; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+        .footer-links button { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-dim); padding: 4px 8px; border-radius: 4px; font-size: 8.5px; white-space: nowrap; cursor: pointer; }
+        .btn-decision { border-color: var(--decision-gold) !important; color: var(--decision-gold) !important; }
+
+        #relogio { font-family: monospace; font-size: 10px; color: var(--text-dim); }
+        pre { background: #000; padding: 10px; border-radius: 4px; overflow-x: auto; border: 1px solid #222; }
+        code { font-family: 'Cascadia Code', monospace; font-size: 12px; color: #50fa7b; }
+    </style>
+</head>
+<body>
+
+    <div class="app-header">
+        <img src="Logo.png" alt="KALLYS" class="logo-img">
+        <div class="led-panel">
+            <div id="led-cpu" class="led" title="Neural Core"></div>
+            <div id="led-mem" class="led" title="LTM Sync"></div>
+            <div id="led-file" class="led" title="Sensory Input"></div>
         </div>
-    </div>  
-    <div id="log"><div class="msg sys"><b>[KERNEL]</b> v3.7 Online. Suporte Multigeral Ativo.</div></div>  
+        <div class="app-title">DATA VISION V9.0.0</div>
+        <div id="relogio">00:00:00</div>
+        <div class="header-tools">
+            <button class="btn-action" style="width:28px; height:28px" onclick="takeSnapshot()">📸</button>
+            <button class="btn-action" style="width:28px; height:28px" onclick="alternarTema()">🌓</button>
+        </div>
+    </div>
 
-    <div class="controls">  
-        <div class="profile-row">  
-            <button class="btn-agent active" id="btn-mira" onclick="setAgent('mira')">⚔️ VALKÍRIA (TÁTICA)</button>  
-            <button class="btn-agent" style="border-color:var(--luma-amber); color:var(--luma-amber);" id="btn-luma" onclick="setAgent('luma')">💛 ARQUITETA (INTEL)</button>  
-            <button class="btn-agent" style="border-color:var(--kaia-mint); color:var(--kaia-mint);" id="btn-kaia" onclick="setAgent('kaia')">🩺 MÉDICA (MED)</button>  
-        </div>  
-        <div id="dynamic-buttons" class="profile-row"></div>  
+    <div class="perfil-dashboard" id="perfil-stats">
+        <div class="stat-item">TEC <div class="stat-bar-bg"><div id="bar-tec" class="stat-fill color-tec"></div></div></div>
+        <div class="stat-item">EST <div class="stat-bar-bg"><div id="bar-est" class="stat-fill color-est"></div></div></div>
+        <div class="stat-item">CRI <div class="stat-bar-bg"><div id="bar-cri" class="stat-fill color-cri"></div></div></div>
+    </div>
 
-        <div class="input-row">  
-            <input id="cmd" placeholder="Comando para AXIOM.." onkeypress="if(event.key==='Enter') enviar()">  
-            <input type="file" id="file-input" style="display:none" onchange="handleFile(this)">
-            <button class="tool-btn" onclick="document.getElementById('file-input').click()">📁</button>
-            <button class="tool-btn" id="mic-btn" onclick="toggleAudio()">🎤</button>
-            <button class="btn-agent" onclick="enviar()" style="width: 120px; border-color: var(--mira-cyan);">DISPARAR</button>  
-        </div>  
-    </div>  
-
-<script>  
-    let currentAgent = 'mira', isListening = false;
-    let stats = { rpm: 0, tpm: 0, requestCount: 0, tokenCount: 0, startTime: Date.now() };
-
-    function updateDashboard() {
-        const elapsedMinutes = (Date.now() - stats.startTime) / 60000 || 1;
-        stats.rpm = Math.round(stats.requestCount / elapsedMinutes);
-        stats.tpm = Math.round(stats.tokenCount / elapsedMinutes);
-        document.getElementById('telemetry').innerText = `RPM: ${stats.rpm}/30 | TPM: ${stats.tpm}/30000`;
-    }
-
-    /* --- SUPERVISOR LOOP (L.U.M.A.) --- */
-    async function lumaSupervision(miraText, userPrompt) {
-        const key = localStorage.getItem("groq_key");
-        if (!key) return { final: miraText, status: "sem_supervisao" };
-        
-        stats.requestCount++;
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST", headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-                model: "llama-3.1-8b-instant",
-                messages: [
-                    { role: "system", content: "Você é a ARQUITETA (LUMA). Supervisione a VALKÍRIA. Erros técnicos ou lógicos devem ser corrigidos. Se estiver ok, responda APROVADO." },
-                    { role: "user", content: `PROMPT: ${userPrompt}\nRESPOSTA MIRA: ${miraText}` }
-                ]
-            })
-        });
-        const data = await res.json();
-        const review = data.choices?.[0]?.message?.content || "";
-        stats.tokenCount += review.length * 1.3;
-        updateDashboard();
-        
-        return review.startsWith("APROVADO") ? { final: miraText, status: "APROVADO" } : { final: review, status: "CORRIGIDO" };
-    }
-
-    function handleFile(input) {
-        const file = input.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => { document.getElementById('cmd').value = `[ARQUIVO: ${file.name}]\n${e.target.result}`; };
-        reader.readAsText(file);
-    }
-
-    const recognition = window.SpeechRecognition || window.webkitSpeechRecognition ? new (window.SpeechRecognition || window.webkitSpeechRecognition)() : null;
-    if (recognition) {
-        recognition.lang = 'pt-BR';
-        recognition.onresult = (e) => { document.getElementById('cmd').value = e.results[0][0].transcript; toggleAudio(); };
-    }
-    function toggleAudio() {
-        if (!recognition) return;
-        isListening = !isListening;
-        document.getElementById('mic-btn').classList.toggle('listening', isListening);
-        isListening ? recognition.start() : recognition.stop();
-    }
-
-    /* --- AGENTES E BOTÕES --- */
-    const AGENTS = {  
-        mira: { name: "VALKÍRIA", profile: "TÁTICA (LOOP) ⚔️", buttons: [  
-            { label: "📊 STATUS DANOS", cmd: "Diagnóstico." }, { label: "⚡ OVERLOAD", cmd: "Purga.", danger: true },  
-            { label: "☢️ QUARENTENA", cmd: "Emergência.", danger: true }, { label: "🔁 RESET", cmd: "Reset.", danger: true },  
-            { label: "🛰️ SCAN", cmd: "Scan profundo." }, { label: "🛡️ SILENCE", cmd: "Silêncio." }  
-        ]},  
-        luma: { name: "ARQUITETA", profile: "INTEL (LOOP) 💛", buttons: [  
-            { label: "📁 MEMÓRIA", cmd: "Contexto." }, { label: "📐 ESTRUTURA", cmd: "Arquitetura." },  
-            { label: "💻 PROG", cmd: "Codificação." }, { label: "🔮 PROJETAR", cmd: "Cenários." },  
-            { label: "🧠 SINTONIA", cmd: "Sensibilidade." }, { label: "🔍 DEBUG", cmd: "Depuração." }  
-        ]},
-        kaia: { name: "MÉDICA", profile: "SUPORTE (MED) 🤍", buttons: [  
-            { label: "💊 TRIAGEM", cmd: "Realizar check-up rápido." }, { label: "🧠 NEURO-SYNC", cmd: "Estabilizar sinapses." },  
-            { label: "🚑 SOCORRO", cmd: "Protocolos de emergência médica." }, { label: "📉 VITAIS", cmd: "Verificar status biológico." },  
-            { label: "🧘 CALIBRAR", cmd: "Iniciar exercício de respiração." }, { label: "🧬 ANÁLISE", cmd: "Diagnóstico molecular." }  
-        ]}
-    };  
-
-    function setAgent(a) {  
-        currentAgent = a;  
-        document.getElementById('profileName').innerText = AGENTS[a].profile;  
-        document.getElementById('btn-mira').classList.toggle('active', a === 'mira');
-        document.getElementById('btn-luma').classList.toggle('active', a === 'luma');
-        document.getElementById('btn-kaia').classList.toggle('active', a === 'kaia');
-        const container = document.getElementById('dynamic-buttons'); container.innerHTML = "";  
-        AGENTS[a].buttons.forEach(btn => {  
-            const b = document.createElement('button'); 
-            b.className = `btn-action ${a === 'luma' ? 'btn-luma-sub' : (a === 'kaia' ? 'btn-kaia-sub' : (btn.danger ? 'btn-danger' : ''))}`;  
-            b.innerText = btn.label; b.onclick = () => { document.getElementById('cmd').value = btn.cmd; enviar(); };  
-            container.appendChild(b);  
-        });  
-    }  
-
-    async function enviar() {  
-        const input = document.getElementById("cmd"), msg = input.value.trim(), key = localStorage.getItem("groq_key");  
-        if(!msg || !key) return;
-        
-        addLog("user", msg, "user"); 
-        input.value = "";
-        stats.requestCount++;
-        stats.tokenCount += msg.length * 1.3;
-        updateDashboard();
-        
-        try {
-            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {  
-                method:"POST", headers:{"Authorization":`Bearer ${key}`, "Content-Type":"application/json"},  
-                body:JSON.stringify({ 
-                    model:"llama-3.1-8b-instant", 
-                    messages:[{
-                        role:"system", 
-                        content: currentAgent === 'kaia' 
-                            ? "Você é a MÉDICA (KAIA). Especialista em psicologia e medicina. Forneça suporte de bem-estar e diagnósticos médicos simulados ao Operador." 
-                            : "Você é " + AGENTS[currentAgent].name
-                    }, {role:"user", content: msg}] 
-                })  
-            });  
-            const data = await res.json();
-            let finalContent = data.choices[0].message.content;
-            stats.tokenCount += finalContent.length * 1.3;
-            updateDashboard();
-
-            let tag = "";
-            if (currentAgent === 'mira') {
-                const supervision = await lumaSupervision(finalContent, msg);
-                finalContent = supervision.final; tag = supervision.status;
-            }
-            addLog(currentAgent, finalContent, currentAgent, tag);
-        } catch (e) {
-            addLog("sys", "ERRO DE CONEXÃO NO KERNEL.", "danger");
-        }
-    }  
-
-    function addLog(a, t, type="", tag="") {  
-        const d = document.createElement("div"); d.className = `msg ${type}`;
-        d.innerHTML = `${tag ? `<span class="sup-tag">${tag}</span>` : ""}<b>[${a.toUpperCase()}]</b><br>${t}`;
-        document.getElementById("log").appendChild(d);
-        document.getElementById("log").scrollTop = document.getElementById("log").scrollHeight;
-    }  
-
-    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+    <div id="chat"></div>
+    <div id="typing" style="display:none; font-size:9px; color:var(--accent-color); margin: 0 0 10px 15px; font-family:monospace;">>>> PROCESSANDO VETORES...</div>
     
-    window.onload = () => {
-        setAgent('mira');
-        if (!localStorage.getItem("groq_key")) {
-            const novaChave = prompt("⚠️ ACESSO NEGADO: Insira sua GROQ API KEY para inicializar o Kernel AXIOM:");
-            if (novaChave) {
-                localStorage.setItem("groq_key", novaChave);
-                addLog("sys", "Credenciais aceitas. Kernel v3.7 pronto.");
-            } else {
-                addLog("sys", "ERRO: Sistema operando em modo offline.", "danger");
+    <div class="input-area">
+        <select id="select-missao" onchange="atualizarMissao()">
+            <option value="padrao">📌 Protocolo Kallys (Padrão)</option>
+            <option value="estrategia">🧠 Estratégia / Planejamento</option>
+            <option value="comunicacao">🗣️ Comunicação / Escrita</option>
+            <option value="criativo">🎨 Criativo / Exploração</option>
+            <option value="aprender">🎓 Aprendizagem / Didática</option>
+            <option value="programar">💻 Software / Debug</option>
+            <option value="investigar">🕵️ Investigação / Risco</option>
+            <option value="motivacional">🔥 Moral / Disciplina</option>
+            <option value="gamer">🎮 Performance Gamer</option>
+        </select>
+
+        <div class="telemetry-bar">
+            <span>LAT: <span id="val-lat" class="telemetry-val">0.00s</span></span>
+            <span>RPM: <span id="val-rpm" class="telemetry-val">0</span></span>
+            <span>TPM: <span id="val-tpm" class="telemetry-val">0</span></span>
+            <span id="file-status"></span>
+            <span>CTX: <span id="val-ctx" class="telemetry-val">0/30</span></span>
+        </div>
+        
+        <div class="memoria-bar"><div id="status-bar"></div></div>
+
+        <div class="input-row">
+            <button id="mute-btn" class="btn-action btn-mute" onclick="toggleMute()">🔇</button>
+            <label class="btn-action" style="cursor:pointer;">
+                📁<input type="file" id="file-upload" style="display:none" multiple accept="image/*,.pdf,.txt" onchange="handleFileUpload(event)">
+            </label>
+            <button id="mic-btn" class="btn-action" onclick="ativarVoz()">🎤</button>
+            <input type="text" id="prompt" placeholder="Inserir diretriz..." autocomplete="off">
+            <button class="btn-send" id="send-btn" onclick="enviar()">↑</button>
+        </div>
+        
+        <div class="footer-links">
+            <button class="btn-decision" onclick="ativarAnaliseDecisao()">DECISÃO</button>
+            <button onclick="exportarLog()">LOGS</button>
+            <button onclick="gerarResumoExecutivo()" style="border-color:var(--accent-color); color:var(--accent-color)">SITREP</button>
+            <button onclick="configurarChave()">KEY</button>
+            <button onclick="limparTudo()" style="color:var(--danger-red)">WIPE</button>
+        </div>
+    </div>
+
+    <script>
+        const LIMITE_MEMORIA = 15;
+        const chatBox = document.getElementById('chat');
+        let historico = JSON.parse(localStorage.getItem('chat_history')) || [];
+        let ltm = JSON.parse(localStorage.getItem('kallys_ltm')) || "Nenhuma diretriz de longo prazo estabelecida."; 
+        let isMuted = false;
+        let filesBuffer = [];
+        let isSending = false;
+
+        let perfilOperador = JSON.parse(localStorage.getItem('kallys_perfil')) || {
+            dominante: "Analista", tags: [], score_tecnico: 0, score_estrategico: 0, score_criativo: 0
+        };
+
+        const PERSONAS = {
+            padrao: "Você é KALLYS V9.0, suporte tático com visão de dados. Use [ANÁLISE TÁTICA] no início de pensamentos complexos.",
+            estrategia: "Análise estratégica e visualização de metas.",
+            comunicacao: "Redação clara e visualização de tópicos.",
+            criativo: "Exploração de ideias.",
+            aprender: "Didática e visualização de progresso.",
+            programar: "Engenharia e debug.",
+            investigar: "Análise de riscos.",
+            motivacional: "Foco em disciplina.",
+            gamer: "Meta-game e performance."
+        };
+
+        let missaoAtual = PERSONAS.padrao;
+
+        function vibrate(ms = 10) { if (navigator.vibrate) navigator.vibrate(ms); }
+
+        function setLED(id, state) {
+            const led = document.getElementById(id);
+            if(!led) return;
+            led.className = 'led';
+            if(state === 'active') led.classList.add('led-active');
+            else if(state === 'vision') led.classList.add('led-vision');
+            else if(state === 'alert') led.classList.add('led-alert');
+        }
+
+        function atualizarVisualPerfil() {
+            document.getElementById('bar-tec').style.width = (perfilOperador.score_tecnico || 0) + "%";
+            document.getElementById('bar-est').style.width = (perfilOperador.score_estrategico || 0) + "%";
+            document.getElementById('bar-cri').style.width = (perfilOperador.score_criativo || 0) + "%";
+        }
+
+        async function enviar() {
+            if(isSending) return;
+            const API_KEY = localStorage.getItem('gsk_key');
+            const input = document.getElementById('prompt');
+            if (!API_KEY || !input.value.trim()) return;
+
+            vibrate(20);
+            isSending = true;
+            setLED('led-cpu', 'active');
+            
+            const msg = input.value;
+            const startTime = performance.now();
+            
+            exibir('user', msg);
+            input.value = '';
+            document.getElementById('typing').style.display = 'block';
+            
+            let contextFiles = filesBuffer.map(f => `[ARQUIVO: ${f.name}]\n${f.content}`).join("\n\n");
+            let pFinal = `[PERFIL: ${perfilOperador.dominante}]\n[LTM]: ${ltm}\n\n${contextFiles}\n\n[DIRETRIZ]: ${msg}`;
+            
+            filesBuffer = []; 
+            document.getElementById('file-status').innerText = "";
+
+            try {
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY.trim()}` },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [
+                            { role: "system", content: `${missaoAtual} Se fornecer dados para gráficos, use EXCLUSIVAMENTE o formato: [CHART:tipo|labels|data|titulo].` },
+                            ...historico.slice(-LIMITE_MEMORIA),
+                            { role: "user", content: pFinal }
+                        ],
+                        temperature: 0.4
+                    })
+                });
+                
+                // EXTRAÇÃO DE TELEMETRIA (RPM / TPM) DOS HEADERS DA GROQ
+                const rpm = response.headers.get('x-ratelimit-remaining-requests') || "N/A";
+                const tpm = response.headers.get('x-ratelimit-remaining-tokens') || "N/A";
+                
+                document.getElementById('val-rpm').innerText = rpm;
+                document.getElementById('val-tpm').innerText = tpm;
+
+                const data = await response.json();
+                const resposta = data.choices[0].message.content;
+                const endTime = performance.now();
+                
+                document.getElementById('val-lat').innerText = `${((endTime - startTime) / 1000).toFixed(2)}s`;
+                document.getElementById('typing').style.display = 'none';
+                
+                historico.push({ role: "user", content: msg }, { role: "assistant", content: resposta });
+                localStorage.setItem('chat_history', JSON.stringify(historico.slice(-30)));
+                exibir('assistant', resposta);
+
+                if(historico.length % 16 === 0) destilarMemoria();
+                if(historico.length % 10 === 0) analisarPerfil();
+
+                setLED('led-cpu', 'idle');
+                atualizarMedidor();
+            } catch (e) { 
+                document.getElementById('typing').style.display = 'none'; setLED('led-cpu', 'alert');
+                console.error("Erro na requisição:", e);
+            } finally {
+                isSending = false;
             }
         }
-    };
-</script>  
-</body>  
+
+        function exibir(role, texto) {
+            const div = document.createElement('div');
+            div.className = `bubble ${role}`;
+            const isBottom = chatBox.scrollHeight - chatBox.clientHeight <= chatBox.scrollTop + 100;
+            let finalHtml = `<small style="opacity:0.5; font-size:9px;">${role === 'user' ? 'OPERADOR' : 'KALLYS'}</small><br>`;
+            
+            if (role === 'assistant') {
+                if (texto.includes('[ANÁLISE TÁTICA]')) {
+                    const regexTatica = /\[ANÁLISE TÁTICA\](.*?)(\n|$)/;
+                    const matchTatica = texto.match(regexTatica);
+                    if(matchTatica) {
+                        finalHtml += `<div class="thought-process"><b>SINC. NEURAL:</b> ${matchTatica[1].trim()}</div>`;
+                        texto = texto.replace(matchTatica[0], '');
+                    }
+                }
+                if (texto.toLowerCase().includes("perfil") || texto.toLowerCase().includes("status tático")) {
+                    const chartId = 'radar-' + Math.random().toString(36).substr(2, 9);
+                    finalHtml += `<div class="chart-container"><canvas id="${chartId}"></canvas></div>`;
+                    setTimeout(() => {
+                        renderizarGrafico(chartId, 'radar', ['Técnico', 'Estratégico', 'Criativo'], [perfilOperador.score_tecnico, perfilOperador.score_estrategico, perfilOperador.score_criativo], 'POTENCIAL');
+                    }, 200);
+                }
+                if (texto.includes('[CHART:')) {
+                    const match = texto.match(/\[CHART:(.*?)\]/);
+                    if (match) {
+                        const parts = match[1].split('|');
+                        if(parts.length >= 4) {
+                            const [tipo, labels, data, titulo] = parts;
+                            const chartId = 'chart-' + Math.random().toString(36).substr(2, 9);
+                            finalHtml += `<div class="chart-container"><canvas id="${chartId}"></canvas></div>`;
+                            setTimeout(() => renderizarGrafico(chartId, tipo, labels.split(','), data.split(','), titulo), 150);
+                            texto = texto.replace(match[0], '');
+                        }
+                    }
+                }
+            }
+            div.innerHTML += finalHtml + marked.parse(texto);
+            chatBox.appendChild(div);
+            if (isBottom) chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function renderizarGrafico(id, tipo, labels, data, titulo) {
+            const canvas = document.getElementById(id); if(!canvas) return;
+            const ctx = canvas.getContext('2d'); const isRadar = tipo.trim() === 'radar';
+            new Chart(ctx, {
+                type: tipo.trim(),
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: titulo, data: data.map(Number),
+                        backgroundColor: isRadar ? 'rgba(16, 163, 127, 0.15)' : ['#10a37f', '#007bff', '#ffca28', '#ff3333', '#c5a059'],
+                        borderColor: '#10a37f', borderWidth: 1.5, tension: 0.3
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: !isRadar, labels: { color: '#9ea2a8', font: { size: 9 } } } } }
+            });
+        }
+
+        async function destilarMemoria() {
+            const API_KEY = localStorage.getItem('gsk_key'); if (!API_KEY) return;
+            setLED('led-mem', 'vision');
+            try {
+                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY.trim()}` },
+                    body: JSON.stringify({
+                        model: "llama-3.1-8b-instant",
+                        messages: [{ role: "system", content: "Resuma a LTM focando em Protocolos e Fatos do Operador." }, { role: "user", content: historico.slice(-6).map(m => m.content).join(" | ") }],
+                        temperature: 0.2
+                    })
+                });
+                const d = await res.json();
+                ltm = d.choices[0].message.content;
+                localStorage.setItem('kallys_ltm', JSON.stringify(ltm));
+                setLED('led-mem', 'active');
+            } catch (e) { setLED('led-mem', 'alert'); }
+        }
+
+        async function analisarPerfil() {
+            const API_KEY = localStorage.getItem('gsk_key'); if (!API_KEY) return;
+            try {
+                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${API_KEY.trim()}` },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [{ role: "system", content: "Analise as interações e retorne APENAS um JSON: {dominante:string, score_tecnico:number, score_estrategico:number, score_criativo:number}." }, { role: "user", content: historico.slice(-10).map(m => m.content).join(" ") }],
+                        response_format: { type: "json_object" }
+                    })
+                });
+                const d = await res.json();
+                perfilOperador = JSON.parse(d.choices[0].message.content);
+                localStorage.setItem('kallys_perfil', JSON.stringify(perfilOperador));
+                atualizarVisualPerfil();
+            } catch (e) {}
+        }
+
+        async function handleFileUpload(e) { 
+            const files = Array.from(e.target.files);
+            vibrate(30); setLED('led-file', 'vision');
+            for (let f of files) {
+                if (f.type.startsWith('image/')) {
+                    const result = await Tesseract.recognize(f, 'por+eng');
+                    filesBuffer.push({ name: f.name, content: result.data.text });
+                } else {
+                    const r = new FileReader();
+                    r.onload = (ev) => {
+                        filesBuffer.push({ name: f.name, content: ev.target.result });
+                        document.getElementById('file-status').innerText = `BUFF: ${filesBuffer.length}`;
+                    };
+                    r.readAsText(f);
+                }
+            }
+            setLED('led-file', 'active');
+        }
+
+        function ativarVoz() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(!SpeechRecognition) return alert("Não suportado.");
+            vibrate(15); const rec = new SpeechRecognition();
+            rec.lang = 'pt-BR'; rec.start();
+            rec.onresult = (e) => document.getElementById('prompt').value = e.results[0][0].transcript;
+        }
+
+        function ativarAnaliseDecisao() {
+            document.getElementById('prompt').value = "KALLYS, execute PROTOCOLO DE DECISÃO ESTRATÉGICA.";
+            enviar();
+        }
+
+        async function takeSnapshot() {
+            vibrate(50); const canvas = await html2canvas(document.body);
+            const link = document.createElement('a'); link.download = `SITREP-${Date.now()}.png`; link.href = canvas.toDataURL(); link.click();
+        }
+
+        function atualizarMissao() { 
+            const sel = document.getElementById('select-missao').value;
+            missaoAtual = PERSONAS[sel];
+            localStorage.setItem('kallys_active_mission', sel); vibrate(10);
+        }
+
+        function exportarLog() {
+            const b = new Blob([historico.map(m => `[${m.role}]: ${m.content}`).join('\n')], { type: 'text/plain' });
+            const l = document.createElement('a'); l.download = `LOG.txt`; l.href = URL.createObjectURL(b); l.click();
+        }
+
+        function gerarResumoExecutivo() {
+            document.getElementById('prompt').value = "Comandante solicitando SitRep: Gere um resumo executivo tático.";
+            enviar();
+        }
+
+        function atualizarMedidor() { 
+            document.getElementById('status-bar').style.width = (Math.min(historico.length / 30 * 100, 100)) + "%"; 
+            document.getElementById('val-ctx').innerText = `${historico.length}/30`;
+        }
+
+        function alternarTema() { document.body.classList.toggle('light-mode'); vibrate(5); }
+        function configurarChave() { const k = prompt("GSK KEY:"); if(k) localStorage.setItem('gsk_key', k); }
+        function limparTudo() { if(confirm("WIPE SYSTEM?")) { localStorage.clear(); location.reload(); } }
+        function toggleMute() { isMuted = !isMuted; document.getElementById('mute-btn').classList.toggle('active'); }
+
+        setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
+        document.getElementById('prompt').addEventListener('keypress', (e) => { if(e.key === 'Enter') enviar(); });
+
+        const salva = localStorage.getItem('kallys_active_mission');
+        if(salva) { document.getElementById('select-missao').value = salva; missaoAtual = PERSONAS[salva]; }
+
+        function renderizarChat() { 
+            chatBox.innerHTML = ''; 
+            [...historico].forEach(m => exibir(m.role, m.content)); 
+            atualizarMedidor(); atualizarVisualPerfil();
+        }
+
+        renderizarChat();
+    </script>
+</body>
 </html>
